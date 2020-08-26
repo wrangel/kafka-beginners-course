@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
+import java.util.stream.IntStream;
 
 public class ProducerDemoWithCallback {
 
@@ -27,32 +28,33 @@ public class ProducerDemoWithCallback {
 
         // 2) Create the producer
         // Key and value are both Strings
-        final KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
+        final KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
-        //3) Create producer record
-        ProducerRecord<String, String> record = new ProducerRecord<String, String>(
-                "first-topic",
-                 "hello-worldddfdfdf"
+
+        IntStream.range(1, 500).forEach (
+                i -> {
+                    //3) Create producer record
+                    ProducerRecord<String, String> record = new ProducerRecord<>(
+                            "first-topic",
+                            "hello-world " + i
+                    );
+                    // 4) Send data (asynchronous! - until here, the program will exit and messages will never be sent)
+                    producer.send(record, (recordMetadata, e) -> {
+                        // Executes every time a record is being sent successfully, or Exception is thrown
+                        if(e == null) {
+                            logger.info("Received new metadata.\n" +
+                                    "Topic: " + recordMetadata.topic() + "\n" +
+                                    "Partition: " + recordMetadata.partition() + "\n" +
+                                    "Offset: " + recordMetadata.offset() + "\n" +
+                                    "Timestamp: " + recordMetadata.timestamp() + "\n"
+                            );
+                        } else
+                            logger.error("Error while producing", e);
+                    });
+                }
         );
 
-        // 4) Send data (asynchronous! - until here, the program will exit and messages will never be sent)
-        producer.send(record, new Callback() {
-
-            public void onCompletion(RecordMetadata recordMetadata, Exception e) {
-                // Executes every time a record is being sent successfully, or Exception is thrown
-                if(e == null) {
-                    logger.info("Received new metadata.\n" +
-                                "Topic: " + recordMetadata.topic() + "\n" +
-                                "Partition: " + recordMetadata.partition() + "\n" +
-                                "Offset: " + recordMetadata.offset() + "\n" +
-                                "Timestamp: " + recordMetadata.timestamp() + "\n"
-                    );
-                } else
-                    logger.error("Error while producing", e);
-            }
-        });
-
-        // 5) Execute
+        // 5) Flush data / Execute
         producer.close();
 
         // To execute, start a kafka-console-consumer:
