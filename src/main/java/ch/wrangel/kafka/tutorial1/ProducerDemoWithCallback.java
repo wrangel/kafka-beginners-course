@@ -1,15 +1,17 @@
 package ch.wrangel.kafka.tutorial1;
 
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Properties;
 
 public class ProducerDemoWithCallback {
 
     public static void main(String[] args) {
+        // Create a logger for the class
+        final Logger logger = LoggerFactory.getLogger(ProducerDemoWithCallback.class);
         String bootstrapServers = "localhost:9092";
 
         // 1) Create producer properties
@@ -25,16 +27,30 @@ public class ProducerDemoWithCallback {
 
         // 2) Create the producer
         // Key and value are both Strings
-        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
+        final KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
 
         //3) Create producer record
         ProducerRecord<String, String> record = new ProducerRecord<String, String>(
                 "first-topic",
-                 "hello-worldaaaa"
+                 "hello-worldddfdfdf"
         );
 
         // 4) Send data (asynchronous! - until here, the program will exit and messages will never be sent)
-        producer.send(record);
+        producer.send(record, new Callback() {
+
+            public void onCompletion(RecordMetadata recordMetadata, Exception e) {
+                // Executes every time a record is being sent successfully, or Exception is thrown
+                if(e == null) {
+                    logger.info("Received new metadata.\n" +
+                                "Topic: " + recordMetadata.topic() + "\n" +
+                                "Partition: " + recordMetadata.partition() + "\n" +
+                                "Offset: " + recordMetadata.offset() + "\n" +
+                                "Timestamp: " + recordMetadata.timestamp() + "\n"
+                    );
+                } else
+                    logger.error("Error while producing", e);
+            }
+        });
 
         // 5) Execute
         producer.close();
