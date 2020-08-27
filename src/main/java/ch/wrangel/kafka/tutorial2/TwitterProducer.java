@@ -10,22 +10,32 @@ import com.twitter.hbc.core.endpoint.StatusesFilterEndpoint;
 import com.twitter.hbc.core.processor.StringDelimitedProcessor;
 import com.twitter.hbc.httpclient.auth.Authentication;
 import com.twitter.hbc.httpclient.auth.OAuth1;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import static ch.wrangel.kafka.tutorial1.Constants.bootstrapServers;
 
 // Much of the class is based on quickstart from https://github.com/twitter/hbc
 public class TwitterProducer {
 
     private final Logger logger = LoggerFactory.getLogger(TwitterProducer.class.getName());
 
+    // Optional: set up some track terms
+    private final List<String> terms = Lists.newArrayList("kafka");
+
     // Constructor
-    public TwitterProducer() {}
+    public TwitterProducer() {
+    }
 
     public static void main(String[] args) {
         new TwitterProducer().run();
@@ -45,6 +55,17 @@ public class TwitterProducer {
         client.connect();
 
         // Create a Kafka producer
+        KafkaProducer<String, String> producer = createKafkaProducer();
+
+        // Add a shutdown hook
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            logger.info("Stopping application");
+            logger.info("Shutting down client for Twitter");
+            client.stop();
+            logger.info("Closing producer");
+            producer.close();
+            logger.info("Done!");
+        }));
 
         // Loop to send tweets to Kafka
         // on a different thread, or multiple different threads....
@@ -56,14 +77,31 @@ public class TwitterProducer {
                 e.printStackTrace();
                 client.stop();
             }
-            if(msg != null)
+            if (msg != null) {
                 logger.info(msg);
+                // Everytime we receive a message, we want the kafka producer to send it
+                /* Important: Create topic before starting producer:
+        kafka-topics --bootstrap-server localhost:9092 --topic twitter-tweets --partitions 6 --replication-factor 1 --create
+        Plus, add a consumer
+        kafka-console-consumer --bootstrap-server localhost:9092 --topic twitter-tweets
+     */
+                String topic = "twitter-tweets";
+                producer.send(
+                        new ProducerRecord<>(topic, null, msg),
+                        // Intercept errors
+                        (recordMetadata, e) -> {
+                            // In case of errors
+                            if (e != null)
+                                logger.error("Something bad happened", e);
+                        }
+                );
+            }
         }
         logger.info("End of application");
 
     }
 
-    public Client createTwitterClient(BlockingQueue<String> msgQueue) {
+    private Client createTwitterClient(BlockingQueue<String> msgQueue) {
 
         final String consumerKey = "Y4mNgLCYmatR09RbJaeEIHXbU";
         final String consumerSecret = "3SELqV5ffz9dRp00pymgalx0eOYYYQou7cikK8ccR0JvjgJ33V";
@@ -74,8 +112,6 @@ public class TwitterProducer {
         Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);
         StatusesFilterEndpoint hosebirdEndpoint = new StatusesFilterEndpoint();
 
-        // Optional: set up some track terms
-        List<String> terms = Lists.newArrayList("bitcoin");
         hosebirdEndpoint.trackTerms(terms);
 
         // These secrets should be read from a config file
@@ -90,6 +126,14 @@ public class TwitterProducer {
 
         // Return client
         return builder.build();
+    }
+
+    public KafkaProducer<String, String> createKafkaProducer() {
+        Properties properties = new Properties();
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        return new KafkaProducer<>(properties);
     }
 
 }
