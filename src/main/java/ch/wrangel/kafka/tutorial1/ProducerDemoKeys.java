@@ -33,7 +33,7 @@ public class ProducerDemoKeys {
         final KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
 
-        IntStream.range(1, 10).forEach (
+        IntStream.range(1, 100).forEach (
                 i -> {
                     String topic = "second-topic";
                     String value = "hello world " + i;

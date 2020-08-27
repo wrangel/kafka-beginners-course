@@ -36,7 +36,7 @@ public class ProducerDemoWithCallback {
                     //3) Create producer record
                     // Without keys, messages are being sent round robin
                     ProducerRecord<String, String> record = new ProducerRecord<>(
-                            "first-topic",
+                            "second-topic",
                             "hello-world " + i
                     );
                     // 4) Send data (asynchronous! - until here, the program will exit and messages will never be sent)

@@ -7,10 +7,11 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Properties;
 
+import static ch.wrangel.kafka.tutorial1.Constants.bootstrapServers;
+
 public class ProducerDemo {
 
     public static void main(String[] args) {
-        String bootstrapServers = "localhost:9092";
 
         // 1) Create producer properties
         // Consult Kafka Documentation - Producer configs
