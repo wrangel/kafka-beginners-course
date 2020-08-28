@@ -89,16 +89,15 @@ public class TwitterProducer {
                 producer.send(
                         new ProducerRecord<>(topic, null, msg),
                         // Intercept errors
-                        (recordMetadata, e) -> {
-                            // In case of errors
-                            if (e != null)
-                                logger.error("Something bad happened", e);
-                        }
+                            (recordMetadata, e) -> {
+                                // In case of errors
+                                if (e != null)
+                                    logger.error("Something bad happened", e);
+                            }
                 );
             }
         }
         logger.info("End of application");
-
     }
 
     private Client createTwitterClient(BlockingQueue<String> msgQueue) {
