@@ -31,7 +31,7 @@ public class TwitterProducer {
     private final Logger logger = LoggerFactory.getLogger(TwitterProducer.class.getName());
 
     // Optional: set up some track terms
-    private final List<String> terms = Lists.newArrayList("kafka");
+    private final List<String> terms = Lists.newArrayList("bitcoin", "usa", "politics", "sport", "soccer");
 
     // Constructor
     public TwitterProducer() {
@@ -132,6 +132,20 @@ public class TwitterProducer {
         properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        // Create a safe producer
+        properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
+        // All below configs are not necessary, since included implicitly in idempotence
+        properties.setProperty(ProducerConfig.ACKS_CONFIG, "all");
+        properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
+        properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
+
+        // High throughput producer (at the expense of a bit of latency and CPU usage)
+        properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
+        // Introduce producer delay
+        properties.setProperty(ProducerConfig.LINGER_MS_CONFIG, "20");
+        properties.setProperty(ProducerConfig.BATCH_SIZE_CONFIG, Integer.toString(32 * 1024)); // 32 KB batch size
+
         return new KafkaProducer<>(properties);
     }
 
