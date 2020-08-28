@@ -24,6 +24,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static ch.wrangel.kafka.tutorial2.Constants.bootstrapServers;
+import static ch.wrangel.kafka.tutorial2.Constants.topic;
 
 
 // Much of the class is based on quickstart from https://github.com/twitter/hbc
@@ -81,12 +82,6 @@ public class TwitterProducer {
             if (msg != null) {
                 logger.info(msg);
                 // Everytime we receive a message, we want the kafka producer to send it
-                /* Important: Create topic before starting producer:
-        kafka-topics --bootstrap-server localhost:9092 --topic twitter-tweets --partitions 6 --replication-factor 1 --create
-        Plus, add a consumer
-        kafka-console-consumer --bootstrap-server localhost:9092 --topic twitter-tweets
-     */
-                String topic = "twitter-tweets";
                 producer.send(
                         new ProducerRecord<>(topic, null, msg),
                         // Intercept errors

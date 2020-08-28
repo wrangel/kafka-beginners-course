@@ -5,6 +5,11 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -16,32 +21,47 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Properties;
 
-// Verify results on bonsai.io console: GET /twitter/_doc/<document_id>
+import static ch.wrangel.kafka.tutorial3.Constants.bootstrapServers;
+import static ch.wrangel.kafka.tutorial3.Constants.topic;
+
+// Verify results on bonsai.io console: GET /twitter/_doc/<document_sid>
 public class ElasticSearchConsumer {
 
     public static void main(String[] args) throws IOException {
 
+        Duration timeout = Duration.ofMillis(100);
         Logger logger = LoggerFactory.getLogger(ElasticSearchConsumer.class.getName());
 
         RestHighLevelClient client = createClient();
 
-        String jsonString = "{\"foo\": \"bar\"}";
 
-        /* Request will fail unless twitter index exists
-        Create twitter index in bonsai.io console: PUT /twitter
-         */
-        IndexRequest indexRequest = new IndexRequest("twitter")
-                .source(jsonString, XContentType.JSON);
+        // Create Kafka consumer
+        KafkaConsumer<String, String> consumer = createConsumer(topic);
 
-        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
-        String id = indexResponse.getId();
+        // Poll for data - Consumer does not get data until it asks for it
+        while (true) {
+            ConsumerRecords<String, String> records = consumer.poll(timeout);
+            for (ConsumerRecord<String, String> record : records) {
+                // Insert data into ElasticSearch
+                IndexRequest indexRequest = new IndexRequest(topic)
+                        .source(record.value(), XContentType.JSON);
+            /* Request will fail unless twitter index exists
+                Create twitter index in bonsai.io console: PUT /twitter
+            */
+                IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+                String id = indexResponse.getId();
 
-        // Get back the ES id from the jsonString
-        logger.info(id);
+                // Get back the ES id from the jsonString
+                logger.info(id);
+            }
+        }
 
         // Close the client gracefully
-        client.close();
+        // client.close();
     }
 
     // Create elasticsearch client
@@ -73,6 +93,27 @@ public class ElasticSearchConsumer {
                         httpAsyncClientBuilder ->
                                 httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
         return new RestHighLevelClient(builder);
+    }
+
+    public static KafkaConsumer<String, String> createConsumer(String topic) {
+        // Change group id in order to read from beginning / Way of resetting the application
+        String groupId = "kafka-demo-elasticsearch";
+
+        // Create consumer configs
+        Properties properties = new Properties();
+        // Consult Kafka documentation, "New Consumer Properties"
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        // Take bytes and create String (deserialize)
+        properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        // Earliest: Read from beginning of topic ("--from-beginning" in CLI), latest: Read only new messages
+        properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        // Create consumer
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
+        consumer.subscribe(Collections.singleton(topic));
+        return consumer;
     }
 
 }

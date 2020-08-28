@@ -1,4 +1,4 @@
-package ch.wrangel.kafka.tutorial2;
+package ch.wrangel.kafka.tutorial3;
 
 public class Constants {
 
