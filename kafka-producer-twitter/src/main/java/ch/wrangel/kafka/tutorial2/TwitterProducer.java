@@ -141,7 +141,9 @@ public class TwitterProducer {
         properties.setProperty(ProducerConfig.RETRIES_CONFIG, Integer.toString(Integer.MAX_VALUE));
         properties.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "5");
 
-        // High throughput producer (at the expense of a bit of latency and CPU usage)
+        /* High throughput producer (at the expense of a bit of latency and CPU usage)
+        https://blog.cloudflare.com/squeezing-the-firehose/
+         */
         properties.setProperty(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
         // Introduce producer delay
         properties.setProperty(ProducerConfig.LINGER_MS_CONFIG, "20");
