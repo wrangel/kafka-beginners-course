@@ -67,9 +67,9 @@ public class ConsumerDemoWithThread {
 
     public static class ConsumerRunnable implements Runnable {
         // Latch will be able to shutdown application correctly
-        private CountDownLatch latch;
-        private KafkaConsumer<String, String> consumer;
-        private Logger logger = LoggerFactory.getLogger(ConsumerRunnable.class);
+        private final CountDownLatch latch;
+        private final KafkaConsumer<String, String> consumer;
+        private final Logger logger = LoggerFactory.getLogger(ConsumerRunnable.class);
 
         // Constructor
         // Latch: Deal with concurrency

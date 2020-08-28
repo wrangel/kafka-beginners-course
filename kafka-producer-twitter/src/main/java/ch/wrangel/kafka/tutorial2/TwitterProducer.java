@@ -23,7 +23,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static ch.wrangel.kafka.tutorial1.Constants.bootstrapServers;
+import static ch.wrangel.kafka.tutorial2.Constants.bootstrapServers;
+
 
 // Much of the class is based on quickstart from https://github.com/twitter/hbc
 public class TwitterProducer {

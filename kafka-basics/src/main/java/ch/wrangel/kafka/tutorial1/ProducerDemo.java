@@ -26,12 +26,12 @@ public class ProducerDemo {
 
         // 2) Create the producer
         // Key and value are both Strings
-        KafkaProducer<String, String> producer = new KafkaProducer<String, String>(properties);
+        KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 
         //3) Create producer record
-        ProducerRecord<String, String> record = new ProducerRecord<String, String>(
+        ProducerRecord<String, String> record = new ProducerRecord<>(
                 "first-topic",
-                 "hello-worldaaaa"
+                "hello-worldaaaa"
         );
 
         // 4) Send data (asynchronous! - until here, the program will exit and messages will never be sent)
