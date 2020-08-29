@@ -1,5 +1,6 @@
 package ch.wrangel.kafka.tutorial3;
 
+import com.google.gson.JsonParser;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -38,25 +39,36 @@ public class ElasticSearchConsumer {
 
         RestHighLevelClient client = createClient();
 
-
         // Create Kafka consumer
         KafkaConsumer<String, String> consumer = createConsumer(topic);
 
         // Poll for data - Consumer does not get data until it asks for it
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(timeout);
+            // Insert tweets into ES, one at a time (synchronous)
             for (ConsumerRecord<String, String> record : records) {
+
+                // To make consumer idempotent: 2 strategies
+                // 1st strategy: Kafka generic ID
+                //String id = record.topic() + "_" + record.partition() + "_" + record.offset();
+
+                // 2nd strategy: Use Twitter feed specific id for ES as well
+                String id = extractIdFromTweet(record.value());
+
                 // Insert data into ElasticSearch
                 IndexRequest indexRequest = new IndexRequest(topic)
-                        .source(record.value(), XContentType.JSON);
-            /* Request will fail unless twitter index exists
-                Create twitter index in bonsai.io console: PUT /twitter
-            */
+                        .source(record.value(), XContentType.JSON)
+                        /* Check idempotence by re-running consumer again, and obtaining the same ids
+                            Data is re-inserted thereby, but not as duplicate, but overwriting
+                         */
+                        .id(id);
+                /* Request will fail unless twitter index exists
+                   Create twitter index in bonsai.io console: PUT /twitter
+                */
                 IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
-                String id = indexResponse.getId();
 
                 // Get back the ES id from the jsonString
-                logger.info(id);
+                logger.info(indexResponse.getId());
             }
         }
 
@@ -114,6 +126,13 @@ public class ElasticSearchConsumer {
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
         consumer.subscribe(Collections.singleton(topic));
         return consumer;
+    }
+
+    private static String extractIdFromTweet(String tweetJson) {
+        return JsonParser.parseString(tweetJson)
+                .getAsJsonObject()
+                .get("id_str")
+                .getAsString();
     }
 
 }
