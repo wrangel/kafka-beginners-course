@@ -10,5 +10,9 @@ public class Constants {
     */
     public static final String topic = "twitter-tweets";
 
+    // Use info provided in "Access" tab on bonsai.io
+    public static final String elasticSearchAccess =
+            "https://ass4h85py6:t92ddqc7nb@kafka-course-5695759870.eu-central-1.bonsaisearch.net:443";
+
 
 }

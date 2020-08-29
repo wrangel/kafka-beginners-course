@@ -23,8 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static ch.wrangel.kafka.tutorial2.Constants.bootstrapServers;
-import static ch.wrangel.kafka.tutorial2.Constants.topic;
+import static ch.wrangel.kafka.tutorial2.Constants.*;
 
 
 // Much of the class is based on quickstart from https://github.com/twitter/hbc
@@ -97,11 +96,6 @@ public class TwitterProducer {
     }
 
     private Client createTwitterClient(BlockingQueue<String> msgQueue) {
-
-        final String consumerKey = "Y4mNgLCYmatR09RbJaeEIHXbU";
-        final String consumerSecret = "3SELqV5ffz9dRp00pymgalx0eOYYYQou7cikK8ccR0JvjgJ33V";
-        final String token = "1296708112515301376-CTzHspACtUJ2g2bOUWtrknNmq8F7Oq";
-        final String secret = "M0w6yees60pekkdrfmJ0iKi7jjPGQ45stZGQQbAfUFIyW";
 
         // Declare the host you want to connect to, the endpoint, and authentication (basic auth or oauth)
         Hosts hosebirdHosts = new HttpHosts(Constants.STREAM_HOST);
