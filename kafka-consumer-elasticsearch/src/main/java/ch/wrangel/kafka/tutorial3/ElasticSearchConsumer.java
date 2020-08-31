@@ -32,7 +32,17 @@ import java.util.Properties;
 import static ch.wrangel.kafka.tutorial3.Constants.bootstrapServers;
 import static ch.wrangel.kafka.tutorial3.Constants.topic;
 
-// Verify results on bonsai.io console: GET /twitter/_doc/<document_sid>
+/* Verify results on bonsai.io console: GET /twitter/_doc/<document_sid>
+     - If consumer receives 0 records: verify with
+     kafka-consumer-groups --bootstrap-server localhost:9092 --group kafka-demo-elasticsearch --describe
+     that consumer has reached the end of the log (CURRENT_OFFSET = LOG_END_OFFSET)
+     - Replay data for the consumer
+        - Stop consumer
+        - Reset offsets
+            kafka-consumer-groups --bootstrap-server localhost:9092 --group kafka-demo-elasticsearch --topic twitter-tweets --reset-offsets --execute --to-earliest
+        - Restart consumer
+        Replaying won't duplicate records, since consumer is idempotent
+ */
 public class ElasticSearchConsumer {
 
     public static void main(String[] args) throws IOException {
